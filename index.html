@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paper.io Web</title>
+    <style>
+        body {
+            background-color: #323232; /* Notre fameux GRIS_FOND */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            text-align: center;
+        }
+        canvas {
+            background-color: #FFFFFF; /* Le fond de la map */
+            border: 4px solid #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>Paper.io Multiplayer</h1>
+        <canvas id="gameCanvas" width="1000" height="1000"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        const N = 20;
+        const CELL_SIZE = 50;
+
+        // Connexion au serveur Python !
+        // Change 127.0.0.1 par ton IP Radmin/VPN quand tes potes voudront jouer
+        const ws = new WebSocket("ws://127.0.0.1:5555");
+
+        let mon_id = null;
+        let players = {};
+        let grid = [];
+
+        // --- RÉCEPTION DES MESSAGES DU SERVEUR ---
+        ws.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+            
+            if (message.type === "init") {
+                mon_id = message.data.id;
+                console.log("Connecté en tant que Joueur " + mon_id);
+            } 
+            else if (message.type === "update") {
+                grid = message.grid;
+                players = message.players;
+                dessinerJeu(); // On redessine tout à chaque tick
+            }
+        };
+
+        ws.onclose = function() {
+            alert("Connexion au serveur perdue !");
+        };
+
+        // --- ENVOI DES TOUCHES ---
+        document.addEventListener("keydown", function(event) {
+            // Empêcher la page de scroller quand on joue avec les flèches
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(event.code) > -1) {
+                event.preventDefault();
+            }
+
+            let action = null;
+            if (event.key === "ArrowUp") action = {dx: 0, dy: -1};
+            if (event.key === "ArrowDown") action = {dx: 0, dy: 1};
+            if (event.key === "ArrowLeft") action = {dx: -1, dy: 0};
+            if (event.key === "ArrowRight") action = {dx: 1, dy: 0};
+
+            // Si on a appuyé sur une flèche et que le WebSocket est ouvert
+            if (action && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(action));
+            }
+        });
+
+        // --- LE MOTEUR GRAPHIQUE (Remplace Pygame) ---
+        function dessinerJeu() {
+            // 1. Effacer tout l'écran (Fond blanc de la map)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Dessiner la Grille (Territoires et Traînées)
+            for (let y = 0; y < N; y++) {
+                for (let x = 0; x < N; x++) {
+                    let v = grid[y][x];
+                    if (v !== 0) {
+                        let pid_case = Math.abs(v);
+                        if (players[pid_case]) {
+                            // On récupère la couleur RGB (ex: [0, 0, 255])
+                            let rgb = players[pid_case].color; 
+                            
+                            if (v < 0) {
+                                // Traînée : couleur pastel (on ajoute du blanc)
+                                let r = Math.min(255, rgb[0] + 100);
+                                let g = Math.min(255, rgb[1] + 100);
+                                let b = Math.min(255, rgb[2] + 100);
+                                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            } else {
+                                // Base : couleur légèrement plus sombre
+                                let r = Math.max(0, rgb[0] - 40);
+                                let g = Math.max(0, rgb[1] - 40);
+                                let b = Math.max(0, rgb[2] - 40);
+                                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            }
+
+                            // Dessiner le carré
+                            ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                        }
+                    }
+                }
+            }
+
+            // 3. Dessiner les têtes des joueurs
+            for (let pid in players) {
+                let p = players[pid];
+                let rgb = p.color;
+                
+                // La tête couleur pure
+                ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                ctx.fillRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                
+                // Le petit liseré blanc autour de la tête
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+            }
+        }
+    </script>
+</body>
+</html>
