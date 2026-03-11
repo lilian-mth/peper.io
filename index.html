@@ -21,6 +21,7 @@
             background-color: #FFFFFF; /* Le fond de la map */
             border: 4px solid #000;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            touch-action: none
         }
         h1 { margin-bottom: 10px; }
     </style>
@@ -136,6 +137,40 @@
                 ctx.strokeRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
             }
         }
+        // --- GESTION DU TACTILE (SWIPES) ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // On note où le doigt se pose
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        // On regarde où le doigt part et on calcule la direction
+        document.addEventListener('touchend', function(e) {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            
+            let diffX = touchEndX - touchStartX;
+            let diffY = touchEndY - touchStartY;
+
+            let action = null;
+            // On vérifie si le mouvement est assez grand pour être un vrai swipe (min 30px)
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > 30) {
+                    action = (diffX > 0) ? {dx: 1, dy: 0} : {dx: -1, dy: 0}; // Droite ou Gauche
+                }
+            } else {
+                if (Math.abs(diffY) > 30) {
+                    action = (diffY > 0) ? {dx: 0, dy: 1} : {dx: 0, dy: -1}; // Bas ou Haut
+                }
+            }
+
+            if (action && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(action));
+            }
+        }, false);
     </script>
 </body>
 </html>
