@@ -4,6 +4,7 @@ import json
 import random
 from collections import deque
 import os
+import time
 
 # --- 1. CONFIGURATION ET ÉTAT DU JEU ---
 HOST = '0.0.0.0' # 0.0.0.0 pour accepter les connexions externes
@@ -68,7 +69,8 @@ def creer_nouveau_joueur():
         "id": id_joueur, "color": couleur,
         "x": nx, "y": ny,
         "dx": 0, "dy": 0,
-        "tail": [], "score": 0, "action_queue": []
+        "tail": [], "score": 0, "action_queue": [],
+        "last_action": time.time(),
     }
     
     for i in range(3):
