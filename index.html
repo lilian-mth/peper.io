@@ -128,8 +128,8 @@
                 let cibleY = p.y * CELL_SIZE;
                 
                 // Le carré avance vers sa cible
-                p.visualX += (cibleX - p.visualX) * 0.4;
-                p.visualY += (cibleY - p.visualY) * 0.4;
+                p.visualX += (cibleX - p.visualX) * 0.25;
+                p.visualY += (cibleY - p.visualY) * 0.25;
             }
 
             // 3. Effacer l'écran (Gris foncé)
@@ -175,7 +175,7 @@
                                 let b = Math.max(0, rgb[2] - 40);
                                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                             }
-                            ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                            ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                         }
                     }
                 }
@@ -187,11 +187,11 @@
                 let rgb = p.color;
                 
                 ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                ctx.fillRect(p.visualX, p.visualY, CELL_SIZE - 1, CELL_SIZE - 1);
+                ctx.fillRect(p.visualX, p.visualY, CELL_SIZE, CELL_SIZE);
                 
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE - 1, CELL_SIZE - 1);
+                ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE, CELL_SIZE);
             }
 
             ctx.restore(); 
