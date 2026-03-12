@@ -18,7 +18,6 @@
             text-align: center;
         }
         canvas {
-            background-color: #FFFFFF; /* Le fond de la map */
             border: 4px solid #000;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             touch-action: none
@@ -87,55 +86,74 @@
         });
 
         // --- LE MOTEUR GRAPHIQUE (Remplace Pygame) ---
+        // --- LE MOTEUR GRAPHIQUE (Avec Caméra) ---
         function dessinerJeu() {
-            // 1. Effacer tout l'écran (Fond blanc de la map)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 1. Effacer l'écran avec la couleur du "vide" (Gris foncé)
+            ctx.fillStyle = "#323232";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. Dessiner la Grille (Territoires et Traînées)
+            ctx.save(); // On sauvegarde l'état normal de l'écran
+
+            // --- CALCUL DE LA CAMÉRA ---
+            if (mon_id && players[mon_id]) {
+                let moi = players[mon_id];
+                
+                // On calcule le centre exact de mon joueur en pixels
+                let centreJoueurX = (moi.x * CELL_SIZE) + (CELL_SIZE / 2);
+                let centreJoueurY = (moi.y * CELL_SIZE) + (CELL_SIZE / 2);
+                
+                // On calcule le décalage pour mettre ce centre au milieu du Canvas
+                let offsetX = (canvas.width / 2) - centreJoueurX;
+                let offsetY = (canvas.height / 2) - centreJoueurY;
+                
+                // On applique le décalage à tout le Canvas !
+                ctx.translate(offsetX, offsetY);
+            }
+
+            // 2. Dessiner le fond blanc de la vraie Map (qui va bouger avec la caméra)
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, N * CELL_SIZE, N * CELL_SIZE);
+
+            // 3. Dessiner la Grille (Territoires et Traînées)
             for (let y = 0; y < N; y++) {
                 for (let x = 0; x < N; x++) {
                     let v = grid[y][x];
                     if (v !== 0) {
                         let pid_case = Math.abs(v);
                         if (players[pid_case]) {
-                            // On récupère la couleur RGB (ex: [0, 0, 255])
                             let rgb = players[pid_case].color; 
                             
                             if (v < 0) {
-                                // Traînée : couleur pastel (on ajoute du blanc)
                                 let r = Math.min(255, rgb[0] + 100);
                                 let g = Math.min(255, rgb[1] + 100);
                                 let b = Math.min(255, rgb[2] + 100);
                                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                             } else {
-                                // Base : couleur légèrement plus sombre
                                 let r = Math.max(0, rgb[0] - 40);
                                 let g = Math.max(0, rgb[1] - 40);
                                 let b = Math.max(0, rgb[2] - 40);
                                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                             }
-
-                            // Dessiner le carré
                             ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
                         }
                     }
                 }
             }
 
-            // 3. Dessiner les têtes des joueurs
+            // 4. Dessiner les têtes des joueurs
             for (let pid in players) {
                 let p = players[pid];
                 let rgb = p.color;
                 
-                // La tête couleur pure
                 ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
                 ctx.fillRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
                 
-                // Le petit liseré blanc autour de la tête
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
                 ctx.strokeRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
             }
+
+            ctx.restore(); // On annule le décalage de la caméra pour ne pas casser le prochain tick
         }
         // --- GESTION DU TACTILE (SWIPES) ---
         let touchStartX = 0;
