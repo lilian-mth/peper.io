@@ -63,6 +63,7 @@ def creer_nouveau_joueur():
     
     nouveau_joueur = {
         "id": id_joueur, "color": couleur,
+        "name": f"Joueur {id_joueur}",
         "x": nx, "y": ny,
         "dx": 0, "dy": 0,
         "tail": [], "score": 0, "action_queue": [],
@@ -193,11 +194,18 @@ async def gerer_client(websocket):
     await websocket.send(json.dumps({"type": "init", "data": nouveau_joueur}))
     try:
         async for message in websocket:
-            action = json.loads(message)
+            data = json.loads(message)
             if pid in players:
-                players[pid]["last_action"] = time.time() # <-- RESET DU CHRONO ICI
-                if len(players[pid]["action_queue"]) < 2:
-                    players[pid]["action_queue"].append(action)
+                players[pid]["last_action"] = time.time()
+                
+                # SI c'est un message d'arrivée avec le pseudo
+                if "type" in data and data["type"] == "join":
+                    players[pid]["name"] = data["name"]
+                    
+                # SI c'est une touche directionnelle ("dx" est présent)
+                elif "dx" in data:
+                    if len(players[pid]["action_queue"]) < 2:
+                        players[pid]["action_queue"].append(data)
     except: pass
     finally:
         if websocket in clients_connectes: del clients_connectes[websocket]

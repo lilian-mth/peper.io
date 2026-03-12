@@ -44,3 +44,48 @@ h1 { margin-bottom: 10px; }
     font-size: 24px;
     text-decoration: underline;
 }
+
+/* --- LE MENU D'ACCUEIL --- */
+#start-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(30, 30, 30, 0.95); /* Fond presque noir */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100; /* Passe au-dessus de tout le reste */
+}
+#start-menu h1 {
+    font-size: 80px;
+    color: white;
+    margin-bottom: 40px;
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+}
+#pseudo-input {
+    padding: 15px;
+    font-size: 24px;
+    border-radius: 8px;
+    border: none;
+    text-align: center;
+    margin-bottom: 20px;
+    width: 300px;
+}
+#play-btn {
+    padding: 15px 50px;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    background-color: #ff4757;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+#play-btn:hover {
+    background-color: #ff6b81;
+    transform: scale(1.05); /* Petit effet de zoom quand on passe la souris */
+}

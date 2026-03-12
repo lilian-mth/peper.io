@@ -6,9 +6,7 @@ const N = 50;
 const CELL_SIZE = 50;
 const GAP = 2;
 
-// Connexion au serveur Python !
-// Change 127.0.0.1 par ton IP Radmin/VPN quand tes potes voudront jouer
-const ws = new WebSocket("wss://server-paper-io-lilian.onrender.com");
+
 
 let mon_id = null;
 let players = {};
@@ -17,39 +15,56 @@ let grid = [];
 let lastUpdateTime = performance.now();
 const TICK_RATE_MS = 120; // Doit correspondre à ton TICK_RATE serveur (0.120)
 
-// --- RÉCEPTION DES MESSAGES DU SERVEUR ---
-ws.onmessage = function(event) {
-    const message = JSON.parse(event.data);
-    
-    if (message.type === "init") {
-        mon_id = message.data.id;
-        console.log("Connecté en tant que Joueur " + mon_id);
-    } 
-    else if (message.type === "update") {
-        grid = message.grid;
-        lastUpdateTime = performance.now(); // On remet le chrono à zéro !
+
+let ws = null; // On prépare la variable, mais on ne se connecte pas encore
+
+// --- GESTION DU BOUTON JOUER ---
+document.getElementById("play-btn").addEventListener("click", function() {
+    let inputVal = document.getElementById("pseudo-input").value.trim();
+    let pseudo = (inputVal === "") ? "Anonyme" : inputVal;
+
+    // 1. On cache le menu d'accueil
+    document.getElementById("start-menu").style.display = "none";
+
+    // 2. ON SE CONNECTE AU SERVEUR MAINTENANT !
+    ws = new WebSocket("wss://server-paper-io-lilian.onrender.com");
+
+    // 3. Dès que la connexion est ouverte, on envoie le pseudo
+    ws.onopen = function() {
+        ws.send(JSON.stringify({ type: "join", name: pseudo }));
+    };
+
+    // 4. On écoute les messages (C'EST TON CODE ACTUEL)
+    ws.onmessage = function(event) {
+        const message = JSON.parse(event.data);
         
-        let newPlayers = message.players;
-        for (let pid in newPlayers) {
-            if (players[pid]) {
-                // Technique Pygame : l'ancienne position devient "prev_x" et "prev_y"
-                newPlayers[pid].prev_x = players[pid].x;
-                newPlayers[pid].prev_y = players[pid].y;
-            } else {
-                // Si c'est un nouveau joueur, il n'a pas d'ancienne position
-                newPlayers[pid].prev_x = newPlayers[pid].x;
-                newPlayers[pid].prev_y = newPlayers[pid].y;
+        if (message.type === "init") {
+            mon_id = message.data.id;
+            console.log("Connecté en tant que Joueur " + mon_id);
+        } 
+        else if (message.type === "update") {
+            grid = message.grid;
+            lastUpdateTime = performance.now(); 
+            
+            let newPlayers = message.players;
+            for (let pid in newPlayers) {
+                if (players[pid]) {
+                    newPlayers[pid].prev_x = players[pid].x;
+                    newPlayers[pid].prev_y = players[pid].y;
+                } else {
+                    newPlayers[pid].prev_x = newPlayers[pid].x;
+                    newPlayers[pid].prev_y = newPlayers[pid].y;
+                }
             }
+            players = newPlayers;
+            actualiserClassement();
         }
-        players = newPlayers;
+    };
 
-        actualiserClassement();
-    }
-};
-
-ws.onclose = function() {
-    alert("Connexion au serveur perdue !");
-};
+    ws.onclose = function() {
+        alert("Connexion au serveur perdue !");
+    };
+});
 
 function gameLoop() {
     requestAnimationFrame(gameLoop); // Demande au navigateur de rappeler cette fonction à la prochaine frame
@@ -71,7 +86,7 @@ document.addEventListener("keydown", function(event) {
     if (event.key === "ArrowRight") action = {dx: 1, dy: 0};
 
     // Si on a appuyé sur une flèche et que le WebSocket est ouvert
-    if (action && ws.readyState === WebSocket.OPEN) {
+    if (ws && action && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(action));
     }
 });
@@ -97,7 +112,7 @@ function actualiserClassement() {
         row.style.color = `rgb(${p.color[0]}, ${p.color[1]}, ${p.color[2]})`;
         
         // On écrit le nom et le score (Plus de "(Toi)")
-        row.innerHTML = `<span>${i + 1}. Joueur ${p.id}</span> <span>${p.score}%</span>`;
+        row.innerHTML = `<span>${i + 1}. ${p.name}</span> <span>${p.score}%</span>`;
         
         listDiv.appendChild(row);
     }
