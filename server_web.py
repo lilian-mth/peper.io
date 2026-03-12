@@ -9,7 +9,7 @@ import time
 # --- 1. CONFIGURATION ET ÉTAT DU JEU ---
 HOST = '0.0.0.0'
 PORT = int(os.environ.get("PORT", 5555))
-TICK_RATE = 0.050
+TICK_RATE = 0.120
 N = 50 # <-- LA CARTE EST AGRANDIE ICI AUSSI !
 
 PALETTE_COULEURS = [
