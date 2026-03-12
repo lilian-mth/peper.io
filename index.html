@@ -38,6 +38,7 @@
         
         const N = 50;
         const CELL_SIZE = 50;
+        const GAP = 2;
 
         // Connexion au serveur Python !
         // Change 127.0.0.1 par ton IP Radmin/VPN quand tes potes voudront jouer
@@ -158,7 +159,7 @@
 
             // 4. Fond de la Map
             ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, N * CELL_SIZE, N * CELL_SIZE);
+            ctx.fillRect(0, 0, N * CELL_SIZE - GAP, N * CELL_SIZE - GAP);
 
             // 5. Dessiner la Grille (Territoires et Traînées)
             for (let y = 0; y < N; y++) {
@@ -192,11 +193,11 @@
                 let rgb = p.color;
                 
                 ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                ctx.fillRect(p.visualX, p.visualY, CELL_SIZE, CELL_SIZE);
+                ctx.fillRect(p.visualX, p.visualY, CELL_SIZE - GAP, CELL_SIZE - GAP);
                 
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE, CELL_SIZE);
+                ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE - GAP, CELL_SIZE - GAP);
             }
 
             ctx.restore(); 
