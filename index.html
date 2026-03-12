@@ -200,7 +200,39 @@
                 ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE - GAP, CELL_SIZE - GAP);
             }
 
-            ctx.restore(); 
+            ctx.restore();
+
+            // --- 7. AFFICHER LE CLASSEMENT (HUD) ---
+            // On transforme l'objet des joueurs en liste pour pouvoir les trier
+            let tableauJoueurs = Object.values(players);
+            tableauJoueurs.sort((a, b) => b.score - a.score); // Tri du premier au dernier
+
+            // Dessiner le fond noir transparent du panneau
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(canvas.width - 220, 10, 210, 40 + (tableauJoueurs.length * 30));
+
+            // Dessiner le Titre
+            ctx.fillStyle = "white";
+            ctx.font = "bold 20px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("🏆 Classement", canvas.width - 200, 35);
+
+            // Dessiner la liste des joueurs
+            ctx.font = "16px Arial";
+            let position_y = 65;
+            
+            for (let i = 0; i < tableauJoueurs.length; i++) {
+                let p = tableauJoueurs[i];
+                
+                // On écrit le texte de la couleur du joueur !
+                ctx.fillStyle = `rgb(${p.color[0]}, ${p.color[1]}, ${p.color[2]})`;
+                
+                // On ajoute "(Toi)" si c'est notre joueur
+                let pseudo = (p.id === mon_id) ? `Joueur ${p.id} (Toi)` : `Joueur ${p.id}`;
+                
+                ctx.fillText(`${i + 1}. ${pseudo} - ${p.score}%`, canvas.width - 200, position_y);
+                position_y += 30;
+            }
         }
         // --- GESTION DU TACTILE (SWIPES) ---
         let touchStartX = 0;

@@ -148,7 +148,10 @@ async def boucle_du_jeu():
                 futur_x, futur_y = p["x"] + p["dx"], p["y"] + p["dy"]
                 
                 if futur_x < 0 or futur_x >= N or futur_y < 0 or futur_y >= N:
-                    tuer_joueur(p); continue
+                    p["dx"], p["dy"] = 0, 0
+                    #tuer_joueur(p)
+                    continue
+                    
                 
                 if grid[p["y"]][p["x"]] != p["id"]:
                     grid[p["y"]][p["x"]] = -p["id"]
@@ -166,6 +169,18 @@ async def boucle_du_jeu():
                     elif id_proprio in players: tuer_joueur(players[id_proprio])
                         
                 p["x"], p["y"] = futur_x, futur_y
+
+        # --- CALCUL DES SCORES ---
+        scores_temp = {pid: 0 for pid in players}
+        for ligne in grid:
+            for val in ligne:
+                if val > 0 and val in scores_temp: # Si c'est une base (valeur positive)
+                    scores_temp[val] += 1
+        
+        for pid in players:
+            # Score = (Cases possédées / Total des cases) * 100
+            players[pid]["score"] = round((scores_temp[pid] / (N * N)) * 100, 1)
+        # -------------------------
 
         if clients_connectes:
             etat_du_jeu = json.dumps({"type": "update", "grid": grid, "players": players})
