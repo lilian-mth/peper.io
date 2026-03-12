@@ -48,7 +48,7 @@
         let grid = [];
 
         // --- RÉCEPTION DES MESSAGES DU SERVEUR ---
-        ws.onmessage = function(event) {
+       ws.onmessage = function(event) {
             const message = JSON.parse(event.data);
             
             if (message.type === "init") {
@@ -57,8 +57,21 @@
             } 
             else if (message.type === "update") {
                 grid = message.grid;
-                players = message.players;
-                dessinerJeu(); // On redessine tout à chaque tick
+                
+                // On met à jour les joueurs sans écraser leur position visuelle (l'animation)
+                let newPlayers = message.players;
+                for (let pid in newPlayers) {
+                    if (players[pid]) {
+                        newPlayers[pid].visualX = players[pid].visualX;
+                        newPlayers[pid].visualY = players[pid].visualY;
+                    } else {
+                        // C'est un nouveau joueur, on l'initialise
+                        newPlayers[pid].visualX = newPlayers[pid].x * CELL_SIZE;
+                        newPlayers[pid].visualY = newPlayers[pid].y * CELL_SIZE;
+                    }
+                }
+                players = newPlayers;
+                // /!\ On a enlevé dessinerJeu() d'ici, car il va tourner tout seul à 60 FPS !
             }
         };
 
