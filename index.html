@@ -79,6 +79,12 @@
             alert("Connexion au serveur perdue !");
         };
 
+        function gameLoop() {
+            requestAnimationFrame(gameLoop); // Demande au navigateur de rappeler cette fonction à la prochaine frame
+            dessinerJeu();
+        }
+        gameLoop(); // On lance la boucle au démarrage
+
         // --- ENVOI DES TOUCHES ---
         document.addEventListener("keydown", function(event) {
             // Empêcher la page de scroller quand on joue avec les flèches
@@ -100,34 +106,44 @@
 
         // --- LE MOTEUR GRAPHIQUE (Remplace Pygame) ---
         // --- LE MOTEUR GRAPHIQUE (Avec Caméra) ---
+        // --- LE MOTEUR GRAPHIQUE (Fluide 60 FPS) ---
         function dessinerJeu() {
-            // 1. Effacer l'écran avec la couleur du "vide" (Gris foncé)
+            // 1. Calcul de l'interpolation (Le glissement fluide)
+            for (let pid in players) {
+                let p = players[pid];
+                let cibleX = p.x * CELL_SIZE;
+                let cibleY = p.y * CELL_SIZE;
+                
+                // Le carré avance de 15% vers sa cible à chaque image (effet smooth garanti)
+                p.visualX += (cibleX - p.visualX) * 0.15;
+                p.visualY += (cibleY - p.visualY) * 0.15;
+            }
+
+            // 2. Effacer l'écran (Gris foncé)
             ctx.fillStyle = "#323232";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.save(); // On sauvegarde l'état normal de l'écran
+            ctx.save(); 
 
-            // --- CALCUL DE LA CAMÉRA ---
+            // --- CALCUL DE LA CAMÉRA (Fluide aussi !) ---
             if (mon_id && players[mon_id]) {
                 let moi = players[mon_id];
                 
-                // On calcule le centre exact de mon joueur en pixels
-                let centreJoueurX = (moi.x * CELL_SIZE) + (CELL_SIZE / 2);
-                let centreJoueurY = (moi.y * CELL_SIZE) + (CELL_SIZE / 2);
+                // On utilise visualX et visualY pour que la caméra glisse doucement
+                let centreJoueurX = moi.visualX + (CELL_SIZE / 2);
+                let centreJoueurY = moi.visualY + (CELL_SIZE / 2);
                 
-                // On calcule le décalage pour mettre ce centre au milieu du Canvas
                 let offsetX = (canvas.width / 2) - centreJoueurX;
                 let offsetY = (canvas.height / 2) - centreJoueurY;
                 
-                // On applique le décalage à tout le Canvas !
                 ctx.translate(offsetX, offsetY);
             }
 
-            // 2. Dessiner le fond blanc de la vraie Map (qui va bouger avec la caméra)
+            // 3. Fond de la Map
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, N * CELL_SIZE, N * CELL_SIZE);
 
-            // 3. Dessiner la Grille (Territoires et Traînées)
+            // 4. Dessiner la Grille (Territoires et Traînées)
             for (let y = 0; y < N; y++) {
                 for (let x = 0; x < N; x++) {
                     let v = grid[y][x];
@@ -153,20 +169,21 @@
                 }
             }
 
-            // 4. Dessiner les têtes des joueurs
+            // 5. Dessiner les têtes des joueurs (Elles glissent en douceur)
             for (let pid in players) {
                 let p = players[pid];
                 let rgb = p.color;
                 
                 ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                ctx.fillRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                // On utilise visualX ici !
+                ctx.fillRect(p.visualX, p.visualY, CELL_SIZE - 1, CELL_SIZE - 1);
                 
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                ctx.strokeRect(p.visualX, p.visualY, CELL_SIZE - 1, CELL_SIZE - 1);
             }
 
-            ctx.restore(); // On annule le décalage de la caméra pour ne pas casser le prochain tick
+            ctx.restore(); 
         }
         // --- GESTION DU TACTILE (SWIPES) ---
         let touchStartX = 0;
