@@ -47,6 +47,9 @@
         let players = {};
         let grid = [];
 
+        let lastUpdateTime = performance.now();
+        const TICK_RATE_MS = 120; // Doit correspondre à ton TICK_RATE serveur (0.120)
+
         // --- RÉCEPTION DES MESSAGES DU SERVEUR ---
        ws.onmessage = function(event) {
             const message = JSON.parse(event.data);
@@ -57,21 +60,21 @@
             } 
             else if (message.type === "update") {
                 grid = message.grid;
+                lastUpdateTime = performance.now(); // On remet le chrono à zéro !
                 
-                // On met à jour les joueurs sans écraser leur position visuelle (l'animation)
                 let newPlayers = message.players;
                 for (let pid in newPlayers) {
                     if (players[pid]) {
-                        newPlayers[pid].visualX = players[pid].visualX;
-                        newPlayers[pid].visualY = players[pid].visualY;
+                        // Technique Pygame : l'ancienne position devient "prev_x" et "prev_y"
+                        newPlayers[pid].prev_x = players[pid].x;
+                        newPlayers[pid].prev_y = players[pid].y;
                     } else {
-                        // C'est un nouveau joueur, on l'initialise
-                        newPlayers[pid].visualX = newPlayers[pid].x * CELL_SIZE;
-                        newPlayers[pid].visualY = newPlayers[pid].y * CELL_SIZE;
+                        // Si c'est un nouveau joueur, il n'a pas d'ancienne position
+                        newPlayers[pid].prev_x = newPlayers[pid].x;
+                        newPlayers[pid].prev_y = newPlayers[pid].y;
                     }
                 }
                 players = newPlayers;
-                // /!\ On a enlevé dessinerJeu() d'ici, car il va tourner tout seul à 60 FPS !
             }
         };
 
@@ -110,7 +113,7 @@
         // --- LE MOTEUR GRAPHIQUE (Fluide 60 FPS) ---
         function dessinerJeu() {
             // --- 1. SÉCURITÉ ANTI-CRASH (NOUVEAU) ---
-            // Si la grille n'est pas encore là ou que le serveur a une ancienne taille de map
+            // --- 1. SÉCURITÉ ANTI-CRASH ---
             if (!grid || grid.length === 0 || grid.length !== N) {
                 ctx.fillStyle = "#323232";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -118,18 +121,20 @@
                 ctx.font = "30px Arial";
                 ctx.textAlign = "center";
                 ctx.fillText("Mise à jour du serveur Render en cours...", canvas.width / 2, canvas.height / 2);
-                return; // On arrête tout pour ne pas crasher
+                return;
             }
 
-            // 2. Calcul de l'interpolation (Le glissement fluide)
+            // --- 2. LA TECHNIQUE PYGAME (Interpolation Temporelle) ---
+            let maintenant = performance.now();
+            let elapsed = maintenant - lastUpdateTime;
+            // On calcule le pourcentage de temps écoulé (de 0.0 à 1.0)
+            let ratio = Math.min(elapsed / TICK_RATE_MS, 1.0);
+
             for (let pid in players) {
                 let p = players[pid];
-                let cibleX = p.x * CELL_SIZE;
-                let cibleY = p.y * CELL_SIZE;
-                
-                // Le carré avance vers sa cible
-                p.visualX += (cibleX - p.visualX) * 0.25;
-                p.visualY += (cibleY - p.visualY) * 0.25;
+                // Ta formule exacte retranscrite en JavaScript :
+                p.visualX = (p.prev_x + (p.x - p.prev_x) * ratio) * CELL_SIZE;
+                p.visualY = (p.prev_y + (p.y - p.prev_y) * ratio) * CELL_SIZE;
             }
 
             // 3. Effacer l'écran (Gris foncé)
