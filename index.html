@@ -107,29 +107,41 @@
         // --- LE MOTEUR GRAPHIQUE (Remplace Pygame) ---
         // --- LE MOTEUR GRAPHIQUE (Avec Caméra) ---
         // --- LE MOTEUR GRAPHIQUE (Fluide 60 FPS) ---
+        // --- LE MOTEUR GRAPHIQUE (Fluide 60 FPS) ---
         function dessinerJeu() {
-            // 1. Calcul de l'interpolation (Le glissement fluide)
+            // --- 1. SÉCURITÉ ANTI-CRASH (NOUVEAU) ---
+            // Si la grille n'est pas encore là ou que le serveur a une ancienne taille de map
+            if (!grid || grid.length === 0 || grid.length !== N) {
+                ctx.fillStyle = "#323232";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "30px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("Mise à jour du serveur Render en cours...", canvas.width / 2, canvas.height / 2);
+                return; // On arrête tout pour ne pas crasher
+            }
+
+            // 2. Calcul de l'interpolation (Le glissement fluide)
             for (let pid in players) {
                 let p = players[pid];
                 let cibleX = p.x * CELL_SIZE;
                 let cibleY = p.y * CELL_SIZE;
                 
-                // Le carré avance de 15% vers sa cible à chaque image (effet smooth garanti)
+                // Le carré avance vers sa cible
                 p.visualX += (cibleX - p.visualX) * 0.15;
                 p.visualY += (cibleY - p.visualY) * 0.15;
             }
 
-            // 2. Effacer l'écran (Gris foncé)
+            // 3. Effacer l'écran (Gris foncé)
             ctx.fillStyle = "#323232";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.save(); 
 
-            // --- CALCUL DE LA CAMÉRA (Fluide aussi !) ---
+            // --- CALCUL DE LA CAMÉRA ---
             if (mon_id && players[mon_id]) {
                 let moi = players[mon_id];
                 
-                // On utilise visualX et visualY pour que la caméra glisse doucement
                 let centreJoueurX = moi.visualX + (CELL_SIZE / 2);
                 let centreJoueurY = moi.visualY + (CELL_SIZE / 2);
                 
@@ -139,11 +151,11 @@
                 ctx.translate(offsetX, offsetY);
             }
 
-            // 3. Fond de la Map
+            // 4. Fond de la Map
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, N * CELL_SIZE, N * CELL_SIZE);
 
-            // 4. Dessiner la Grille (Territoires et Traînées)
+            // 5. Dessiner la Grille (Territoires et Traînées)
             for (let y = 0; y < N; y++) {
                 for (let x = 0; x < N; x++) {
                     let v = grid[y][x];
@@ -169,13 +181,12 @@
                 }
             }
 
-            // 5. Dessiner les têtes des joueurs (Elles glissent en douceur)
+            // 6. Dessiner les têtes des joueurs
             for (let pid in players) {
                 let p = players[pid];
                 let rgb = p.color;
                 
                 ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                // On utilise visualX ici !
                 ctx.fillRect(p.visualX, p.visualY, CELL_SIZE - 1, CELL_SIZE - 1);
                 
                 ctx.strokeStyle = "white";
